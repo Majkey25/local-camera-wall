@@ -1,12 +1,14 @@
 :root {
   color-scheme: light dark;
-  --seam: 4px;
+  --seam: 8px;
   --space: 0.5rem;
-  --camera-bar: 2rem;
-  --frame: light-dark(#f3f5f7, #181c21);
-  --rail: light-dark(#e3e9ef, #242b33);
-  --line: light-dark(#c4ced9, #454e59);
-  --accent: light-dark(#16629b, #9acaff);
+  --radius: 0.65rem;
+  --camera-bar: 2.35rem;
+  --frame: light-dark(#f5f6f8, #15181c);
+  --rail: light-dark(#ffffff, #22262d);
+  --line: light-dark(#d2d7df, #505761);
+  --accent: light-dark(#2059a8, #a4c8ff);
+  --accent-hover: light-dark(#17488d, #c2daff);
   --video: #141719;
   --label: #292e34;
   --label-text: #f5f7f9;
@@ -14,22 +16,29 @@
   color: CanvasText;
   background: var(--frame);
 }
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"] { color-scheme: dark; }
 
 *, *::before, *::after { box-sizing: border-box; }
 body, h1, h2, p { margin: 0; }
 [hidden] { display: none !important; }
 button, input, select { font: inherit; }
+input { accent-color: var(--accent); }
 button {
-  min-block-size: 2.1rem;
-  padding-inline: 0.65rem;
-  color: ButtonText;
-  background: ButtonFace;
+  min-block-size: 2.25rem;
+  padding-inline: 0.75rem;
+  color: inherit;
+  background: var(--rail);
   border: 1px solid var(--line);
-  border-radius: 0.2rem;
+  border-radius: var(--radius);
+  cursor: pointer;
 }
-button:disabled { color: GrayText; }
+button:disabled { color: GrayText; cursor: default; }
+button:not(:disabled):hover { background: var(--frame); border-color: var(--accent); }
+button.primary:not(:disabled) { background: var(--accent); color: light-dark(#fff, #102237); border-color: transparent; }
+button.primary:not(:disabled):hover { background: var(--accent-hover); }
 button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-visible {
-  outline: 2px solid Highlight;
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
@@ -38,19 +47,19 @@ button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-v
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space);
-  padding: var(--space);
+  padding: var(--space) calc(2 * var(--space));
+  background: var(--rail);
   border-block-end: 1px solid var(--line);
 }
 .toolbar h1 {
-  font-size: 1rem;
-  font-weight: 600;
+  font-size: 1.15rem;
+  font-weight: 650;
   margin-inline-end: auto;
 }
 .toolbar .is-editing { color: var(--accent); background: var(--rail); border-color: var(--accent); }
 .feed {
   container-type: inline-size;
-  padding-inline: var(--seam);
-  padding-block: var(--seam);
+  padding: calc(1.5 * var(--seam));
 }
 .page-message { padding: var(--space); overflow-wrap: anywhere; }
 
@@ -63,19 +72,25 @@ button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-v
   gap: var(--seam);
 }
 .camera-slot {
-  --span: min(var(--size, 1), var(--columns));
-  grid-column: span var(--span);
-  grid-row: span var(--span);
+  grid-column: span min(var(--size, 1), var(--columns));
+  grid-row: span var(--size, 1);
   min-inline-size: 0;
 }
-.camera { display: flex; flex-direction: column; block-size: 100%; }
+.camera {
+  display: flex;
+  flex-direction: column;
+  block-size: 100%;
+  border-radius: var(--radius);
+  background: var(--video);
+}
 .camera-bar {
   display: flex;
   align-items: center;
   flex: 0 0 var(--camera-bar);
   gap: 0.4rem;
   padding-inline: var(--space) 0.15rem;
-  border-block-end: 1px solid var(--line);
+  border-start-start-radius: inherit;
+  border-start-end-radius: inherit;
   background: var(--rail);
 }
 .camera-bar h2 {
@@ -102,10 +117,22 @@ button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-v
 }
 @container (inline-size < 48rem) {
   .grid { --columns: 2; }
+  .grid:not([data-camera-count="1"], [data-camera-count="2"]) {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-auto-rows: calc((var(--track) * 9 / 16 + var(--camera-bar) - var(--seam)) / 2);
+  }
+  .camera-slot {
+    grid-column: span calc(var(--size, 1) + 1);
+    grid-row: span calc(var(--size, 1) + 1);
+  }
 }
 
 .screen { position: relative; flex: 1; min-block-size: 0; background: var(--video); }
-.picture { position: absolute; inset: 0; }
+.screen, .picture {
+  border-end-start-radius: inherit;
+  border-end-end-radius: inherit;
+}
+.picture { position: absolute; inset: 0; overflow: clip; }
 camera-player, .picture video { display: block; inline-size: 100%; block-size: 100%; }
 .picture video { object-fit: contain; }
 
@@ -122,6 +149,7 @@ camera-player, .picture video { display: block; inline-size: 100%; block-size: 1
 }
 .status-text:not(:empty) {
   padding: 0.2rem 0.4rem;
+  border-radius: calc(var(--radius) / 2);
   max-inline-size: 100%;
   overflow-wrap: anywhere;
   font-size: 0.85rem;
@@ -142,7 +170,7 @@ camera-player, .picture video { display: block; inline-size: 100%; block-size: 1
   cursor: pointer;
 }
 .camera-trigger span { font-size: 0.6rem; letter-spacing: 0.08em; }
-.camera-trigger:hover, .handle:hover { border-color: var(--line); }
+.camera-trigger:not(:disabled):hover, .handle:not(:disabled):hover { border-color: var(--line); }
 .handle { touch-action: none; user-select: none; }
 .move-handle { cursor: grab; }
 .resize-handle {
@@ -153,6 +181,7 @@ camera-player, .picture video { display: block; inline-size: 100%; block-size: 1
   background: var(--label);
   cursor: nwse-resize;
 }
+.resize-handle:not(:disabled):hover { background: var(--label); outline: 1px solid var(--label-text); }
 .resize-handle::after {
   content: "";
   inline-size: 0.6rem;
@@ -171,6 +200,7 @@ camera-player, .picture video { display: block; inline-size: 100%; block-size: 1
   inline-size: min(17rem, calc(100% - 2 * var(--space)));
   padding: var(--space);
   border: 1px solid var(--line);
+  border-radius: var(--radius);
   background: Canvas;
   color: CanvasText;
 }
@@ -189,8 +219,7 @@ camera-player, .picture video { display: block; inline-size: 100%; block-size: 1
   }
 }
 .camera-settings input, .camera-settings select { inline-size: 100%; margin-inline: 0; }
-.camera-settings label + label { margin-block-start: var(--space); }
-.camera-actions, .dialog-actions {
+.camera-actions, .dialog-actions, .settings-actions {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space);
@@ -200,16 +229,24 @@ camera-player, .picture video { display: block; inline-size: 100%; block-size: 1
 dialog {
   inline-size: min(calc(100% - 2rem), 35rem);
   max-block-size: calc(100% - 2rem);
-  padding: 1rem;
+  padding: 1.25rem;
   border: 1px solid var(--line);
+  border-radius: calc(var(--radius) * 1.5);
 }
+.settings-dialog { inline-size: min(calc(100% - 2rem), 29rem); }
+.settings-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.settings-actions button { padding-block: 0.35rem; }
 dialog::backdrop { background: rgb(0 0 0 / 0.6); }
 dialog h2 { margin-block-end: 1rem; font-size: 1.15rem; }
 label { display: grid; gap: 0.25rem; }
-form label + label, .fields { margin-block-start: var(--space); }
+label + label, form p + label, .fields { margin-block-start: var(--space); }
 .fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); gap: var(--space); }
 form .fields label { margin-block-start: 0; min-inline-size: 0; }
-form input { inline-size: 100%; padding: 0.4rem; }
+form input, select { inline-size: 100%; min-inline-size: 0; padding: 0.45rem; }
+form input:not([type="file"]), select {
+  border: 1px solid var(--line);
+  border-radius: calc(var(--radius) / 1.5);
+}
 .hint { margin-block-start: 0.25rem; font-size: 0.85rem; }
 .alert { overflow-wrap: anywhere; }
 .dialog-actions { justify-content: flex-end; margin-block-start: 1rem; }
@@ -228,4 +265,18 @@ form input { inline-size: 100%; padding: 0.4rem; }
   button, .camera-trigger { min-block-size: 2.75rem; }
   .handle { min-inline-size: 2.5rem; }
   .grid[data-camera-count="2"] .camera-slot { min-block-size: 7rem; }
+}
+
+@media (max-width: 26rem) {
+  .toolbar h1 { flex-basis: 100%; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  button { transition: box-shadow 160ms ease-out, scale 160ms ease-out; }
+  button:not(:disabled):hover { box-shadow: 0 1px 4px rgb(0 0 0 / 0.13); }
+  button:not(:disabled):active { scale: 0.97; }
+}
+
+@media (forced-colors: active) {
+  button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-visible { outline-color: Highlight; }
 }

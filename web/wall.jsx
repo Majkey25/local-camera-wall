@@ -12,7 +12,24 @@ const statusTexts = {
   codec: 'Tento prohlížeč nepodporuje přehrávání.',
 };
 
-function Stream({ camera, visible }) {
+function SizeSlider({ size, onCommit, t }) {
+  const slider = useRef(null);
+  useLayoutEffect(() => {
+    slider.current.value = size;
+  }, [size]);
+  useEffect(() => {
+    const input = slider.current;
+    // Native change waits for release so the moving tile cannot pull the slider away.
+    const commit = () => onCommit(input.valueAsNumber);
+    input.addEventListener('change', commit);
+    return () => input.removeEventListener('change', commit);
+  }, [onCommit]);
+  return <input ref={slider} type="range" min="1" max="3" step="1" defaultValue={size}
+    aria-valuetext={t(sizeNames[size - 1])}
+    onInput={event => event.currentTarget.setAttribute('aria-valuetext', t(sizeNames[event.currentTarget.valueAsNumber - 1]))} />;
+}
+
+function Stream({ camera, visible, t }) {
   const picture = useRef(null);
   const [status, setStatus] = useState('loading');
   const [attempt, setAttempt] = useState(0);
@@ -31,16 +48,16 @@ function Stream({ camera, visible }) {
     <>
       <div className="picture" ref={picture} />
       <div className="stream-status">
-        <span className="status-text" role="status">{statusTexts[status]}</span>
+        <span className="status-text" role="status">{statusTexts[status] && t(statusTexts[status])}</span>
         {status === 'error' && <button type="button" className="retry"
-          onClick={() => setAttempt(value => value + 1)}>Zkusit znovu</button>}
+          onClick={() => setAttempt(value => value + 1)}>{t('Zkusit znovu')}</button>}
       </div>
     </>
   );
 }
 
 function CameraTile({ camera, slot, size, position, total, visible, editing, preview, gesture, fullscreen,
-  onMove, onResize, onEdit, onError }) {
+  onMove, onResize, onEdit, onError, t }) {
   const article = useRef(null);
   const menu = useRef(null);
   const opener = useRef(null);
@@ -71,20 +88,19 @@ function CameraTile({ camera, slot, size, position, total, visible, editing, pre
 
   const controls = (
     <>
-      {total > 1 && <label>Přesunout na pozici
+      {total > 1 && <label>{t('Přesunout na pozici')}
         <select value={position} onChange={event => onMove(camera, Number(event.currentTarget.value))}>
           {Array.from({ length: total }, (_, index) => <option key={index} value={index}>{index + 1}</option>)}
         </select>
       </label>}
-      {total > 1 && <label>Velikost záběru
-        <input type="range" min="1" max="3" step="1" value={size} aria-valuetext={sizeNames[size - 1]}
-          onChange={event => onResize(camera, event.currentTarget.valueAsNumber)} />
+      {total > 1 && <label>{t('Velikost záběru')}
+        <SizeSlider size={size} t={t} onCommit={next => onResize(camera, next)} />
       </label>}
       <div className="camera-actions">
         {document.fullscreenEnabled && <button type="button" onClick={toggleFullscreen}>
-          {fullscreen && fullscreen === article.current ? 'Ukončit celou obrazovku' : 'Celá obrazovka'}
+          {t(fullscreen && fullscreen === article.current ? 'Ukončit celou obrazovku' : 'Celá obrazovka')}
         </button>}
-        <button type="button" onClick={() => { closeMenu(); onEdit(camera); }}>Upravit kameru</button>
+        <button type="button" onClick={() => { closeMenu(); onEdit(camera); }}>{t('Upravit kameru')}</button>
       </div>
     </>
   );
@@ -95,7 +111,7 @@ function CameraTile({ camera, slot, size, position, total, visible, editing, pre
       data-drop-target={preview?.target === camera.id || undefined}
       data-resizing={preview?.id === camera.id && preview.kind === 'resize' || undefined}>
       <header className="camera-bar">
-        {editing && total > 1 && <button className="handle move-handle" type="button" aria-label={`Přesunout ${camera.name}`}
+        {editing && total > 1 && <button className="handle move-handle" type="button" aria-label={t('Přesunout {name}', { name: camera.name })}
           {...gesture.events} onPointerDown={event => gesture.start(event, 'move', camera, size)} onClick={openOptions}>
           <span aria-hidden="true">⠿</span>
         </button>}
@@ -103,20 +119,20 @@ function CameraTile({ camera, slot, size, position, total, visible, editing, pre
         {nativePopover ? (
           <>
             <button ref={opener} className="camera-trigger" type="button" popoverTarget={panelId}
-              aria-label={`Nastavení kamery ${camera.name}`}><span aria-hidden="true">•••</span></button>
+              aria-label={t('Nastavení kamery {name}', { name: camera.name })}><span aria-hidden="true">•••</span></button>
             <div ref={menu} id={panelId} className="camera-settings" popover="auto">{controls}</div>
           </>
         ) : (
           <details className="camera-options" ref={details}>
-            <summary ref={opener} className="camera-trigger" aria-label={`Nastavení kamery ${camera.name}`}>•••</summary>
+            <summary ref={opener} className="camera-trigger" aria-label={t('Nastavení kamery {name}', { name: camera.name })}>•••</summary>
             <div className="camera-settings">{controls}</div>
           </details>
         )}
       </header>
       <div className="screen">
-        <Stream camera={camera} visible={visible} />
+        <Stream camera={camera} visible={visible} t={t} />
         {editing && total > 1 && <button className="handle resize-handle" type="button"
-          aria-label={`Změnit velikost ${camera.name}`} {...gesture.events}
+          aria-label={t('Změnit velikost {name}', { name: camera.name })} {...gesture.events}
           onPointerDown={event => gesture.start(event, 'resize', camera, size)} onClick={openOptions} />}
       </div>
     </article>
@@ -193,7 +209,7 @@ function useGesture(grid, order, onMove, onResize) {
   };
 }
 
-export function CameraWall({ cameras, layout, editing, onMove, onResize, onEdit, onError }) {
+export function CameraWall({ cameras, layout, editing, onMove, onResize, onEdit, onError, t }) {
   const grid = useRef(null);
   const [slots, setSlots] = useState(new Map());
   const [visible, setVisible] = useState(!document.hidden);
@@ -238,14 +254,14 @@ export function CameraWall({ cameras, layout, editing, onMove, onResize, onEdit,
   }
 
   return (
-    <section ref={grid} className="grid" aria-label="Živé záběry" data-camera-count={cameras.length}
+    <section ref={grid} className="grid" aria-label={t('Živé záběry')} data-camera-count={cameras.length}
       style={cameras.length === 2 ? { '--first-size': `${tileSize(layout.order[0])}fr`,
         '--second-size': `${tileSize(layout.order[1])}fr` } : undefined}
       onKeyDown={event => { if (event.key === 'Escape' && gesture.cancel()) event.preventDefault(); }}>
       {cameras.map(camera => {
         const slot = slots.get(camera.id);
         return slot && createPortal(
-          <CameraTile camera={camera} slot={slot} size={tileSize(camera.id)} visible={visible}
+          <CameraTile camera={camera} slot={slot} size={tileSize(camera.id)} visible={visible} t={t}
             position={layout.order.indexOf(camera.id)} total={cameras.length} editing={editing} fullscreen={fullscreen}
             gesture={gesture} preview={gesture.preview} onMove={onMove} onResize={onResize} onEdit={onEdit} onError={onError} />,
           slot, camera.id,

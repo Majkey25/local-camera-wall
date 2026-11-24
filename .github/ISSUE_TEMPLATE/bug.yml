@@ -1,0 +1,26 @@
+name: Bug report
+description: Report a problem with the camera wall
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Use fictional camera names and addresses in examples. Keep camera credentials, backups, and footage private. Report security issues privately from the Security tab.
+  - type: input
+    id: version
+    attributes:
+      label: App version
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Windows version and browser
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: Describe what happened and what you expected.
+    validations:
+      required: true

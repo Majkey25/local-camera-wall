@@ -1,22 +1,34 @@
 # Local Camera Wall
 
-A Windows dashboard for live video from up to 24 RTSP cameras on a private network. Arrange and resize the feeds in a live mosaic. The React interface is in Czech.
+[![Windows CI](https://github.com/Majkey25/local-camera-wall/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Majkey25/local-camera-wall/actions/workflows/ci.yml)
+[![Latest release](https://img.shields.io/github/v/release/Majkey25/local-camera-wall)](https://github.com/Majkey25/local-camera-wall/releases/latest)
+[![Windows x64](https://img.shields.io/badge/platform-Windows%20x64-2463aa)](#install-on-windows)
+[![Node.js 24+](https://img.shields.io/badge/Node.js-24%2B-358141)](https://nodejs.org/en/download)
 
-## Run on Windows
+A local Windows dashboard for up to 24 RTSP cameras. Watch live feeds in Chrome or Edge, drag and resize views to arrange the wall, and transfer your setup to another PC in an encrypted file.
 
-Install Node.js 24 or later on Windows x64. From the project directory, run these commands in PowerShell.
+![Dark camera wall in layout editing mode, with one large workshop feed and two smaller entrance and parking feeds.](docs/dashboard.jpg)
+
+*The screenshots show the app with illustrative camera images.*
+
+## Install on Windows
+
+1. Install [Node.js 24 or later for Windows x64](https://nodejs.org/en/download).
+2. Download the Windows x64 ZIP and its checksum from the [latest release](https://github.com/Majkey25/local-camera-wall/releases/latest). Compare `Get-FileHash -Algorithm SHA256 .\local-camera-wall-*-windows-x64.zip` with the `.sha256` file.
+3. If Windows shows an **Unblock** checkbox in the ZIP's **Properties**, select it after verifying the checksum. Extract the ZIP.
+4. Open PowerShell in the extracted folder and run the following commands.
 
 ```powershell
-npm ci --ignore-scripts
+npm.cmd ci --ignore-scripts
 powershell.exe -NoProfile -ExecutionPolicy RemoteSigned -File .\setup.ps1
 .\start.cmd
 ```
 
-Setup downloads the pinned Windows build of [go2rtc](https://github.com/AlexxIT/go2rtc) and checks its SHA-256 digest. `start.cmd` builds the interface locally, starts the dashboard, and opens it in your browser. Use an up-to-date Chrome or Edge for playback and continuous video while rearranging. Press Ctrl+C in the terminal to stop the app. If the app is already running, open `%LOCALAPPDATA%\Kamery\open.html` in the browser to reconnect.
+Setup downloads the pinned Windows build of [go2rtc](https://github.com/AlexxIT/go2rtc) and verifies its SHA-256 digest. The launcher builds the interface and opens the dashboard in the browser. Press Ctrl+C in the terminal to stop it. While the app is running, use `%LOCALAPPDATA%\Kamery\open.html` to open another tab.
 
-## Add a camera
+## Add cameras and arrange the wall
 
-Select **Přidat kameru**. Enter a name, the RTSP URL, and the camera account in the separate username and password fields. Replace `CAMERA_IP` below with the camera's actual private IPv4 address.
+Select **Add camera**. Enter the camera's name, RTSP address, and credentials in their own fields. Substitute the camera's private IPv4 address for `CAMERA_IP`.
 
 | Camera | Example RTSP address |
 | --- | --- |
@@ -24,16 +36,26 @@ Select **Přidat kameru**. Enter a name, the RTSP URL, and the camera account in
 | Reolink | `rtsp://CAMERA_IP:554/Preview_01_sub` |
 | TP-Link Tapo | `rtsp://CAMERA_IP:554/stream1` |
 
-Use an H.264 stream if the browser cannot play the main stream. Some Reolink cameras require RTSP to be enabled in their server settings. Compatible Tapo cameras require a separate camera account, and most battery models do not offer RTSP. [Reolink RTSP guide](https://support.reolink.com/articles/900000630706-Introduction-to-RTSP/) · [TP-Link RTSP guide](https://www.tp-link.com/us/support/faq/2680/)
+If the browser cannot play the main stream, check the camera settings for an H.264 stream. Some Reolink models require RTSP to be enabled first. Compatible Tapo models use a separate camera account. [Reolink RTSP guide](https://support.reolink.com/articles/900000630706-Introduction-to-RTSP/) · [TP-Link RTSP guide](https://www.tp-link.com/us/support/faq/2680/)
 
-Select **Upravit rozložení** to reveal the handles. Drag the grip onto another camera to move that feed to its position. Drag the lower-right corner to change its size. The camera's **•••** menu also has a position selector and a size slider you can use with the keyboard or without dragging. The browser saves both position and size. **Resetovat rozložení** restores the original order and equal sizes. **Celá obrazovka** opens one feed fullscreen and **Upravit kameru** edits or removes it.
+Select **Edit layout** to show the drag and resize handles. Open a camera's **•••** menu to resize or move it with the keyboard, edit its details, or open it full screen. The browser saves the layout automatically. **Reset layout** restores equal sizes and the original order.
 
-## Local access
+## Move your setup to another PC
 
-The dashboard listens on IPv4 loopback port 8476. A launcher in your Windows profile authenticates the browser tab. The video service requires its own authentication on loopback port 8477. The browser streams from the dashboard without a cloud service. Camera streams use RTSP on your network, so use a trusted LAN and keep camera ports off the public internet.
+In **Settings → Export settings**, choose a separate backup password of at least 12 characters. The `.kamery` file encrypts camera addresses, accounts and passwords, layout, theme, and language. Keep its password separate from the file.
 
-Camera settings live in `%LOCALAPPDATA%\Kamery\cameras.json`. The profile folder grants access to the current Windows user and SYSTEM. Windows DPAPI encrypts the camera passwords for the current Windows user. A program running as that user can still access the camera or local dashboard.
+On the second PC, open **Settings → Import settings**, choose the file, and enter the backup password. **Replace settings** restores the backup on that PC. The second PC must be able to reach the same camera addresses.
+
+<img src="docs/settings.jpg" width="620" alt="Settings in light mode with appearance, language, and backup controls.">
+
+## How it runs locally
+
+The dashboard and go2rtc listen on IPv4 loopback. Both require authentication. Camera streams use your local network and camera passwords are encrypted by Windows DPAPI under the current Windows user. Treat that Windows session and the camera network as trusted. Keep camera ports off the public internet.
+
+The app follows your system's color scheme and browser language by default. In **Settings**, you can set the theme and choose English or Czech.
 
 ## Development
 
-Run `npm ci --ignore-scripts`, `npm run build`, and `npm test` on Windows. The tests exercise layout changes, address validation, Windows credential protection, and persistence using temporary data.
+Use the Windows setup commands above. Run `npm test` for the test suite and `npm run build` to rebuild the interface. Stop a running dashboard before running `node scripts/smoke.mjs`, which starts the app on its standard local ports with an isolated profile.
+
+[Changelog](CHANGELOG.md) · [Security reporting](SECURITY.md) · [Releases](https://github.com/Majkey25/local-camera-wall/releases)

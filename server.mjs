@@ -5,6 +5,8 @@ import { access, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { CameraError, MAX_CAMERAS, cameraView, idPattern, newCamera, readCameras, windowsProfile, writeCameras } from './camera-store.mjs';
+import { exportBackup, importBackup } from './backup.mjs';
+import { backupFileLimit } from './settings-format.mjs';
 import { LOOPBACK, VideoEngine } from './video-engine.mjs';
 
 const root = fileURLToPath(new URL('.', import.meta.url));
@@ -37,12 +39,12 @@ function send(response, status, data, type = 'application/json; charset=utf-8') 
   response.end(type.startsWith('application/json') ? JSON.stringify(data) : data);
 }
 
-async function requestInput(request) {
+async function requestInput(request, limit = 4096) {
   const chunks = [];
   let length = 0;
   for await (const chunk of request.iterator({ destroyOnReturn: false })) {
     length += chunk.length;
-    if (length > 4096) {
+    if (length > limit) {
       request.resume();
       throw new CameraError('Zadané údaje jsou příliš dlouhé.');
     }
@@ -73,6 +75,7 @@ async function main() {
   const launcher = join(directory, 'open.html');
   let launcherWritten = false;
   let mutations = Promise.resolve();
+  let backupBusy = false;
   const server = createServer({ requestTimeout: 10_000, headersTimeout: 5000 }, async (request, response) => {
     if (!localRequest(request)) return send(response, 403, { error: 'Přístup je povolen pouze z tohoto počítače.' });
     const { url, method } = request;
@@ -103,7 +106,10 @@ async function main() {
         return send(response, 404, { error: 'Stránka neexistuje.' });
       }
       const id = itemRoute.exec(url)?.[1];
-      if (!(method === 'POST' && url === '/api/cameras') && !(id && (method === 'PUT' || method === 'DELETE'))) {
+      const exporting = method === 'POST' && url === '/api/settings/export';
+      const importing = method === 'POST' && url === '/api/settings/import';
+      if (!exporting && !importing && !(method === 'POST' && url === '/api/cameras')
+        && !(id && (method === 'PUT' || method === 'DELETE'))) {
         return send(response, 404, { error: 'Požadovaná operace neexistuje.' });
       }
       if (request.headers.origin !== origin) return send(response, 403, { error: 'Neplatný původ požadavku.' });
@@ -112,9 +118,29 @@ async function main() {
       }
       let body = null;
       if (method !== 'DELETE') {
-        try { body = JSON.parse(await requestInput(request)); } catch (error) {
+        try { body = JSON.parse(await requestInput(request, importing ? backupFileLimit + 4096 : undefined)); } catch (error) {
           if (error instanceof CameraError) throw error;
           throw new CameraError('Zadané údaje nelze přečíst.');
+        }
+      }
+      if (exporting || importing) {
+        if (backupBusy) return send(response, 409, { error: 'Počkejte na dokončení operace se zálohou.' });
+        if (importing && body?.replace !== true) throw new CameraError('Potvrďte nahrazení nastavení.');
+        backupBusy = true;
+        try {
+          const backup = mutations.then(async () => {
+            if (exporting) return exportBackup(cameras, body);
+            const restored = await importBackup(body);
+            await writeCameras(directory, restored.cameras);
+            const previous = cameras;
+            cameras = restored.cameras;
+            for (const camera of previous) engine.retire(camera);
+            return { cameras: cameras.map(cameraView), layout: restored.layout, theme: restored.theme, language: restored.language };
+          });
+          mutations = backup.catch(() => {});
+          return send(response, 200, await backup);
+        } finally {
+          backupBusy = false;
         }
       }
       const update = mutations.then(async () => {

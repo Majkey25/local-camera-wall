@@ -108,9 +108,13 @@ export async function newCamera(body, previous, slot) {
   return { id: previous?.id ?? randomUUID(), slot, name: body.name.trim(), address, username: body.username, ciphertext };
 }
 
+export async function cameraPassword(camera) {
+  return camera.ciphertext ? windowsProfile('unprotect', camera.ciphertext) : '';
+}
+
 export async function sourceUrl(camera) {
   if (!camera.username) return rtspAddress(camera.address);
-  const password = camera.ciphertext ? await windowsProfile('unprotect', camera.ciphertext) : '';
+  const password = await cameraPassword(camera);
   const userinfo = `${encodeURIComponent(camera.username)}:${encodeURIComponent(password)}@`;
   return `rtsp://${userinfo}${rtspAddress(camera.address).slice('rtsp://'.length)}`;
 }
