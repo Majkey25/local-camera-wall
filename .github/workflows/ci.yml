@@ -32,7 +32,7 @@ jobs:
 
   release:
     name: Package and publish Windows release
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    if: startsWith(github.ref, 'refs/tags/v')
     needs: checks
     runs-on: windows-2025
     timeout-minutes: 15

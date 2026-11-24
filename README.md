@@ -58,4 +58,6 @@ The app follows your system's color scheme and browser language by default. In *
 
 Use the Windows setup commands above. Run `npm test` for the test suite and `npm run build` to rebuild the interface. Stop a running dashboard before running `node scripts/smoke.mjs`, which starts the app on its standard local ports with an isolated profile.
 
+To publish a release, update the version in both package files and add a changelog entry. After the main branch checks pass, push a matching annotated version tag in a separate push. Run **Windows CI** manually against that tag if the tag push did not start a workflow.
+
 [Changelog](CHANGELOG.md) · [Security reporting](SECURITY.md) · [Releases](https://github.com/Majkey25/local-camera-wall/releases)
