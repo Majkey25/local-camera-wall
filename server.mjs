@@ -1,7 +1,7 @@
 import { spawn } from 'node:child_process';
 import { randomBytes, timingSafeEqual } from 'node:crypto';
 import { createServer } from 'node:http';
-import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { access, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { CameraError, MAX_CAMERAS, cameraView, idPattern, newCamera, readCameras, windowsProfile, writeCameras } from './camera-store.mjs';
@@ -15,9 +15,9 @@ const itemRoute = new RegExp(`^/api/cameras/(${idPattern})$`, 'u');
 const streamRoute = new RegExp(`^/video/(${idPattern})$`, 'u');
 const tunnelRoute = /^\/transport\/([a-f0-9]{48})$/u;
 const assets = new Map([
-  ['/', ['index.html', 'text/html; charset=utf-8']],
-  ['/app.js', ['app.js', 'text/javascript; charset=utf-8']],
-  ['/style.css', ['style.css', 'text/css; charset=utf-8']],
+  ['/', ['public/index.html', 'text/html; charset=utf-8']],
+  ['/app.js', ['.runtime/app.js', 'text/javascript; charset=utf-8']],
+  ['/style.css', ['public/style.css', 'text/css; charset=utf-8']],
 ]);
 const responseHeaders = {
   'Cache-Control': 'no-store',
@@ -60,6 +60,9 @@ async function main() {
   if (process.platform !== 'win32' || !process.env.LOCALAPPDATA) {
     throw new Error('Kamery vyžadují Windows a přihlášený uživatelský profil.');
   }
+  await access(join(root, '.runtime', 'app.js')).catch(() => {
+    throw new Error('Chybí sestavené rozhraní. Spusťte aplikaci pomocí start.cmd.');
+  });
   const directory = join(process.env.LOCALAPPDATA, 'Kamery');
   await mkdir(directory, { recursive: true });
   await windowsProfile('profile', directory);
@@ -96,7 +99,7 @@ async function main() {
         if (url === '/api/cameras') return send(response, 200, { cameras: cameras.map(cameraView) });
         if (url === '/video-rtc.js' && engine.player) return send(response, 200, engine.player, 'text/javascript; charset=utf-8');
         const asset = assets.get(url);
-        if (asset) return send(response, 200, await readFile(join(root, 'public', asset[0])), asset[1]);
+        if (asset) return send(response, 200, await readFile(join(root, asset[0])), asset[1]);
         return send(response, 404, { error: 'Stránka neexistuje.' });
       }
       const id = itemRoute.exec(url)?.[1];

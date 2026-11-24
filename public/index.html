@@ -3,98 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="color-scheme" content="dark">
+  <meta name="color-scheme" content="light dark">
   <title>Kamery</title>
   <link rel="stylesheet" href="/style.css">
   <script type="module" src="/app.js"></script>
 </head>
 <body>
-  <header class="bar">
-    <div class="shell bar-inner">
-      <a class="wordmark" href="/" aria-label="Kamery, úvod">
-        <span class="viewfinder" aria-hidden="true"></span>
-        Kamery
-      </a>
-      <span class="local"><i aria-hidden="true"></i>Tento počítač</span>
-    </div>
-  </header>
-  <main class="shell">
-    <div class="toolbar">
-      <div>
-        <h1>Živý přehled</h1>
-        <p class="count" id="camera-count" role="status">Načítám kamery…</p>
-      </div>
-      <button id="add-camera" class="primary"><span aria-hidden="true">+</span> Přidat kameru</button>
-    </div>
-    <p id="page-error" class="alert" role="alert" hidden></p>
-    <div id="layout-bar" class="layout-bar" hidden>
-      <div id="layout" class="segments" role="group" aria-label="Velikost náhledů">
-        <button type="button" data-size="small" aria-pressed="false">Malé</button>
-        <button type="button" data-size="medium" aria-pressed="true">Střední</button>
-        <button type="button" data-size="large" aria-pressed="false">Velké</button>
-      </div>
-      <button id="exit-focus" class="quiet" hidden>Zpět k přehledu</button>
-    </div>
-    <section id="grid" class="grid" aria-label="Kamery" data-size="medium"></section>
-    <section id="empty" class="empty" hidden aria-labelledby="empty-title">
-      <span class="viewfinder" aria-hidden="true"></span>
-      <h2 id="empty-title">Přidejte první kameru</h2>
-      <p>Pro živý obraz budete potřebovat místní RTSP adresu kamery.</p>
-    </section>
-  </main>
-
-  <dialog id="camera-dialog" aria-labelledby="dialog-title">
-    <form id="camera-form">
-      <h2 id="dialog-title">Přidat kameru</h2>
-      <label>Název
-        <input name="name" required maxlength="60" autocapitalize="sentences" placeholder="Například Terasa">
-      </label>
-      <label>Adresa RTSP
-        <input name="address" required maxlength="512" spellcheck="false" autocomplete="off" autocapitalize="off"
-          placeholder="rtsp://IP_KAMERY:554/stream1" aria-describedby="address-help">
-      </label>
-      <p class="hint" id="address-help">Použijte IP adresu kamery. Přihlašovací údaje patří do polí níže.</p>
-      <div class="fields">
-        <label>Uživatelské jméno
-          <input name="username" maxlength="128" autocomplete="off" spellcheck="false" autocapitalize="off">
-        </label>
-        <label>Heslo kamery
-          <input name="password" type="password" maxlength="256" autocomplete="new-password" aria-describedby="password-help">
-        </label>
-      </div>
-      <p class="hint" id="password-help"></p>
-      <p class="alert" id="form-error" role="alert" hidden></p>
-      <div class="dialog-actions">
-        <button type="button" id="remove-camera" class="danger" hidden>Odebrat</button>
-        <button type="button" id="cancel-form" class="quiet">Zrušit</button>
-        <button type="submit" class="primary">Uložit</button>
-      </div>
-    </form>
-  </dialog>
-
-  <template id="camera-card">
-    <article class="camera">
-      <div class="screen">
-        <div class="picture"></div>
-        <div class="idle">
-          <span class="viewfinder" aria-hidden="true"></span>
-          <span class="idle-text">Připojuji…</span>
-          <button class="quiet retry" type="button" hidden>Zkusit znovu</button>
-        </div>
-        <span class="live" hidden><i aria-hidden="true"></i>Živě</span>
-      </div>
-      <div class="camera-info">
-        <div class="details">
-          <h2 class="camera-name"></h2>
-          <p class="address"></p>
-        </div>
-        <div class="camera-actions">
-          <button class="quiet size" type="button" aria-pressed="false">Rozšířit</button>
-          <button class="quiet focus" type="button">Zvětšit</button>
-          <button class="quiet edit" type="button">Upravit</button>
-        </div>
-      </div>
-    </article>
-  </template>
+  <div id="root"><p class="page-message" role="status">Načítám kamery…</p></div>
 </body>
 </html>
