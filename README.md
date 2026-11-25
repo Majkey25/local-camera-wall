@@ -7,7 +7,7 @@
 
 A local Windows dashboard for up to 24 RTSP cameras. Watch live feeds in Chrome or Edge, drag and resize views to arrange the wall, and transfer your setup to another PC in an encrypted file.
 
-![Dark camera wall in layout editing mode, with one large workshop feed and two smaller entrance and parking feeds.](docs/dashboard.jpg)
+![Dark camera wall with one large workshop feed and two smaller entrance and parking feeds.](docs/dashboard.jpg)
 
 *The screenshots show the app with illustrative camera images.*
 
@@ -38,7 +38,7 @@ Select **Add camera**. Enter the camera's name, RTSP address, and credentials in
 
 If the browser cannot play the main stream, check the camera settings for an H.264 stream. Some Reolink models require RTSP to be enabled first. Compatible Tapo models use a separate camera account. [Reolink RTSP guide](https://support.reolink.com/articles/900000630706-Introduction-to-RTSP/) · [TP-Link RTSP guide](https://www.tp-link.com/us/support/faq/2680/)
 
-Select **Edit layout** to show the drag and resize handles. Open a camera's **•••** menu to resize or move it with the keyboard, edit its details, or open it full screen. The browser saves the layout automatically. **Reset layout** restores equal sizes and the original order.
+Drag a camera by its title bar and drop it on the camera at the position you want. Drag the bottom corner to resize the feed while keeping its aspect ratio. For two side-by-side feeds, use the corner closest to the other camera. The **−** and **+** buttons still set sizes in steps. With the grip focused, use the arrow keys to move the tile one position at a time. The browser saves the layout automatically. **Reset layout** restores default sizes and the original order.
 
 ## Move your setup to another PC
 

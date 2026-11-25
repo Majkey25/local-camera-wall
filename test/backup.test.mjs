@@ -9,7 +9,7 @@ test('portable backup authenticates data and re-protects camera passwords on imp
   const cameraSecret = randomBytes(16).toString('hex');
   const address = ['rtsp://', [10, 0, 0, 1].join('.'), '/stream'].join('');
   const camera = await newCamera({ name: 'Test', address, username: 'test', password: cameraSecret }, null, 0);
-  const layout = { order: [camera.id], sizes: { [camera.id]: 3 } };
+  const layout = { order: [camera.id], sizes: { [camera.id]: 0.725 } };
   const backup = await exportBackup([camera], { password, layout, theme: 'dark', language: 'en' });
   const file = JSON.stringify(backup);
   for (const secret of [password, cameraSecret, camera.id, address, camera.ciphertext]) {

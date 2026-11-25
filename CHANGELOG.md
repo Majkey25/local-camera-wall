@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.0
+
+* Drag a camera by its title bar or video to move it. The live tile follows the pointer until you drop it.
+* Resize a camera continuously by dragging its bottom corner. Each tile keeps its video aspect ratio, and saved layouts and encrypted backups retain custom sizes.
+* Improved camera controls, playback status indicators, and light and dark themes.
+
 ## 1.1.0
 
 * Added encrypted backup and restore for camera accounts, passwords, and display preferences.

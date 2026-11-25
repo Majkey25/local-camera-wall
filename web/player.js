@@ -17,6 +17,15 @@ class CameraPlayer extends VideoRTC {
     this.video.controls = false;
     this.video.muted = true;
     this.video.setAttribute('aria-label', this.camera.name);
+    const reportAspectRatio = () => {
+      const { videoWidth, videoHeight } = this.video;
+      if (videoWidth && videoHeight) {
+        this.dispatchEvent(new CustomEvent('aspect-ratio', { detail: videoWidth / videoHeight }));
+      }
+    };
+    this.video.addEventListener('loadedmetadata', reportAspectRatio);
+    this.video.addEventListener('resize', reportAspectRatio);
+    reportAspectRatio();
     this.video.addEventListener('playing', () => {
       this.retries = 0;
       this.showStatus('live');

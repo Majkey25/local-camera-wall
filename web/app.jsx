@@ -4,6 +4,7 @@ import { normalizeLayout, moveCamera } from './layout.mjs';
 import { CameraWall } from './wall.jsx';
 import { session } from './player.js';
 import { Settings } from './settings.jsx';
+import { Icon } from './icon.jsx';
 import { normalizeLanguage, normalizeTheme } from '../settings-format.mjs';
 import { deviceLanguage, translate } from './language.mjs';
 
@@ -65,7 +66,10 @@ function CameraForm({ camera, onClose, onSave, onRemove, t }) {
     <dialog ref={dialog} aria-labelledby="form-title" onClose={onClose}
       onCancel={event => { if (busy) event.preventDefault(); }}>
       <form onSubmit={save}>
-        <h2 id="form-title">{t(camera ? 'Upravit kameru' : 'Přidat kameru')}</h2>
+        <div className="dialog-heading">
+          <span className="dialog-mark"><Icon name={camera ? 'pencil' : 'camera'} /></span>
+          <h2 id="form-title">{t(camera ? 'Upravit kameru' : 'Přidat kameru')}</h2>
+        </div>
         <label>{t('Název')}
           <input name="name" required maxLength={60} defaultValue={camera?.name} autoFocus />
         </label>
@@ -92,7 +96,7 @@ function CameraForm({ camera, onClose, onSave, onRemove, t }) {
             else void submit(() => onRemove(camera), event.currentTarget.form);
           }}>{t(confirmRemoval ? 'Potvrdit odebrání' : 'Odebrat')}</button>}
           <button type="button" disabled={busy} onClick={() => dialog.current.close()}>{t('Zrušit')}</button>
-          <button className="primary" type="submit" disabled={busy}>{t('Uložit')}</button>
+          <button className="primary" type="submit" disabled={busy}><Icon name="check" />{t('Uložit')}</button>
         </div>
       </form>
     </dialog>
@@ -102,7 +106,6 @@ function CameraForm({ camera, onClose, onSave, onRemove, t }) {
 function App() {
   const [model, setModel] = useState(null);
   const [editor, setEditor] = useState(null);
-  const [editingLayout, setEditingLayout] = useState(false);
   const [settings, setSettings] = useState(false);
   const [theme, setTheme] = useState(initialTheme);
   const [language, setLanguage] = useState(() => normalizeLanguage(readPreference(languageKey)));
@@ -196,7 +199,6 @@ function App() {
     setModel({ cameras, layout: normalizeLayout(cameras.map(camera => camera.id), layout) });
     changeTheme(normalizeTheme(theme));
     changeLanguage(normalizeLanguage(language));
-    setEditingLayout(false);
   }
 
   const changed = model && (Object.keys(layout.sizes).length > 0
@@ -205,24 +207,33 @@ function App() {
   return (
     <>
       <header className="toolbar">
-        <h1>{t('Kamery')}</h1>
-        {hasCameras && <>
-          {editingLayout && <button type="button" onClick={reset} disabled={!changed}>{t('Resetovat rozložení')}</button>}
-          <button className={editingLayout ? 'is-editing' : undefined} type="button"
-            onClick={() => setEditingLayout(value => !value)}>
-            {t(editingLayout ? 'Hotovo' : 'Upravit rozložení')}
+        <div className="toolbar-title">
+          <span className="brand-mark"><Icon name="layout" /></span>
+          <h1>{t('Kamery')}</h1>
+        </div>
+        {model && <div className="toolbar-actions">
+          {(model.cameras.length > 1 || changed) && <button type="button" onClick={reset} disabled={!changed}>
+            <Icon name="reset" />{t('Resetovat rozložení')}
+          </button>}
+          {hasCameras && <button className="primary" type="button" ref={addCamera}
+            onClick={() => setEditor({ camera: null })}><Icon name="plus" />{t('Přidat kameru')}</button>}
+          <button className="toolbar-settings" type="button" ref={openSettings}
+            aria-label={t('Nastavení')} title={t('Nastavení')} onClick={() => setSettings(true)}>
+            <Icon name="settings" /><span>{t('Nastavení')}</span>
           </button>
-        </>}
-        {model && (!editingLayout || !hasCameras)
-          && <button className="primary" type="button" ref={addCamera} onClick={() => setEditor({ camera: null })}>{t('Přidat kameru')}</button>}
-        {model && <button type="button" ref={openSettings} onClick={() => setSettings(true)}>{t('Nastavení')}</button>}
+        </div>}
       </header>
       <main className="feed">
         {!session && <p className="page-message" role="status">{t('Otevřete aplikaci pomocí souboru start.cmd.')}</p>}
         {session && !model && !error && <p className="page-message" role="status">{t('Načítám kamery…')}</p>}
         {error && <p className="page-message alert" role="alert">{t(error)}</p>}
-        {model && !hasCameras && <p className="page-message">{t('Přidejte první kameru.')}</p>}
-        {model && <CameraWall cameras={model.cameras} layout={layout} editing={editingLayout} t={t}
+        {model && !hasCameras && <section className="empty-wall" aria-labelledby="empty-title">
+          <span className="dialog-mark"><Icon name="camera" /></span>
+          <h2 id="empty-title">{t('Přidejte první kameru.')}</h2>
+          <button className="primary" type="button" ref={addCamera}
+            onClick={() => setEditor({ camera: null })}><Icon name="plus" />{t('Přidat kameru')}</button>
+        </section>}
+        {hasCameras && <CameraWall cameras={model.cameras} layout={layout} t={t}
           onMove={changePosition} onResize={changeSize} onEdit={camera => setEditor({ camera })} onError={setError} />}
         <p className="visually-hidden" role="status">{announcement}</p>
       </main>

@@ -1,12 +1,14 @@
 import { deepStrictEqual, equal, strictEqual } from 'node:assert';
 import { test } from 'node:test';
-import { moveCamera, normalizeLayout, resizeStep } from '../web/layout.mjs';
+import { moveCamera, normalizeLayout, resizeWidth } from '../web/layout.mjs';
 
 test('saved layout keeps valid choices and appends newly added cameras', () => {
   deepStrictEqual(normalizeLayout(['a', 'b', 'c'], {
     order: ['b', 'removed', 'b', 'a'],
-    sizes: { a: 3, b: '2', removed: 2 },
-  }), { order: ['b', 'a', 'c'], sizes: { a: 3 } });
+    sizes: { a: 3, b: '2', c: 0.725, removed: 2 },
+  }), { order: ['b', 'a', 'c'], sizes: { a: 3, c: 0.725 } });
+  deepStrictEqual(normalizeLayout(['a', 'b', 'c'], { sizes: { a: 0.499, b: 3.001, c: Infinity } }),
+    { order: ['a', 'b', 'c'], sizes: {} });
   deepStrictEqual(normalizeLayout(['a', 'b'], { b: 2 }), { order: ['a', 'b'], sizes: { b: 2 } });
   deepStrictEqual(normalizeLayout(['a', 'b'], null, ['a', 'removed']), { order: ['a', 'b'], sizes: { a: 2 } });
   deepStrictEqual(normalizeLayout(['a', 'b'], { order: [], sizes: {} }, ['a']), { order: ['a', 'b'], sizes: {} });
@@ -22,10 +24,10 @@ test('moving a camera inserts it at the target position without mutating the ori
   deepStrictEqual(order, ['a', 'b', 'c', 'd']);
 });
 
-test('resize responds to the dominant axis and stays within the supported sizes', () => {
-  equal(resizeStep(1, 30, 0, 100), 1);
-  equal(resizeStep(1, 80, 0, 100), 2);
-  equal(resizeStep(2, 0, 40, 100), 3);
-  equal(resizeStep(3, -170, 20, 100), 1);
-  equal(resizeStep(2, 500, 0, 100), 3);
+test('corner movement continuously changes width using the feed aspect ratio', () => {
+  equal(resizeWidth(600, -12, -9, 4 / 3), 588);
+  equal(resizeWidth(600, -24, -18, 4 / 3), 576);
+  equal(resizeWidth(600, 0, 50, 4 / 3), 624);
+  equal(resizeWidth(600, 18, 32, 9 / 16), 618);
+  equal(resizeWidth(600, 12, -16, 4 / 3), 600);
 });

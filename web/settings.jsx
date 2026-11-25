@@ -1,5 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { backupFileLimit, backupPasswordMin, backupPasswordMax } from '../settings-format.mjs';
+import { Icon } from './icon.jsx';
+
+const appearanceOptions = [
+  { value: 'system', label: 'Podle systému', icon: 'monitor' },
+  { value: 'light', label: 'Světlý', icon: 'sun' },
+  { value: 'dark', label: 'Tmavý', icon: 'moon' },
+];
 
 function downloadBackup(backup) {
   const url = URL.createObjectURL(new Blob([JSON.stringify(backup)], { type: 'application/json' }));
@@ -19,7 +26,7 @@ export function Settings({ theme, onTheme, language, onLanguage, onExport, onImp
   const importing = mode === 'import';
 
   useEffect(() => { dialog.current.showModal(); }, []);
-  useEffect(() => { dialog.current.querySelector('input, select').focus(); }, [mode]);
+  useEffect(() => { dialog.current.querySelector(mode ? 'input' : 'input[name="theme"]:checked')?.focus(); }, [mode]);
 
   function show(next) {
     setMode(next);
@@ -63,7 +70,10 @@ export function Settings({ theme, onTheme, language, onLanguage, onExport, onImp
   return (
     <dialog className="settings-dialog" ref={dialog} aria-labelledby="settings-title" onClose={onClose}
       onCancel={event => { if (busy) event.preventDefault(); }}>
-      <h2 id="settings-title">{t(mode ? importing ? 'Import nastavení' : 'Export nastavení' : 'Nastavení')}</h2>
+      <div className="dialog-heading">
+        <span className="dialog-mark"><Icon name={mode ? importing ? 'upload' : 'download' : 'settings'} /></span>
+        <h2 id="settings-title">{t(mode ? importing ? 'Import nastavení' : 'Export nastavení' : 'Nastavení')}</h2>
+      </div>
       {mode ? (
         <form onSubmit={submit}>
           {importing
@@ -88,13 +98,19 @@ export function Settings({ theme, onTheme, language, onLanguage, onExport, onImp
         </form>
       ) : (
         <>
-          <label>{t('Vzhled')}
-            <select value={theme} onChange={event => onTheme(event.currentTarget.value)}>
-              <option value="system">{t('Podle systému')}</option>
-              <option value="light">{t('Světlý')}</option>
-              <option value="dark">{t('Tmavý')}</option>
-            </select>
-          </label>
+          <fieldset className="appearance">
+            <legend>{t('Vzhled')}</legend>
+            <div className="theme-options">
+              {appearanceOptions.map(option => (
+                <label className="theme-option" key={option.value}>
+                  <input className="visually-hidden" type="radio" name="theme" value={option.value}
+                    checked={theme === option.value} onChange={event => onTheme(event.currentTarget.value)} />
+                  <Icon name={option.icon} />
+                  <span>{t(option.label)}</span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
           <label>{t('Jazyk aplikace')}
             <select value={language} onChange={event => onLanguage(event.currentTarget.value)}>
               <option value="system">{t('Podle systému')}</option>
@@ -103,12 +119,12 @@ export function Settings({ theme, onTheme, language, onLanguage, onExport, onImp
             </select>
           </label>
           <div className="settings-actions">
-            <button type="button" onClick={() => show('import')}>{t('Importovat nastavení')}</button>
-            <button type="button" onClick={() => show('export')}>{t('Exportovat nastavení')}</button>
+            <button type="button" onClick={() => show('import')}><Icon name="upload" />{t('Importovat nastavení')}</button>
+            <button type="button" onClick={() => show('export')}><Icon name="download" />{t('Exportovat nastavení')}</button>
           </div>
           {message && <p className="hint" role="status">{t(message)}</p>}
           <div className="dialog-actions">
-            <button type="button" onClick={() => dialog.current.close()}>{t('Hotovo')}</button>
+            <button type="button" onClick={() => dialog.current.close()}><Icon name="check" />{t('Hotovo')}</button>
           </div>
         </>
       )}
