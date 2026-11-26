@@ -4,6 +4,9 @@ import { maxSize, minSize, resizeWidth } from './layout.mjs';
 import { Icon } from './icon.jsx';
 
 const nativePopover = 'showPopover' in HTMLElement.prototype;
+const firstRetryDelay = 2000;
+const maxRetryDelay = 60_000;
+const stablePlaybackTime = 30_000;
 const statusTexts = {
   live: 'Živě',
   paused: 'Přehrávání je pozastavené.',
@@ -34,14 +37,37 @@ function Stream({ camera, visible, status, onStatus, onAspectRatio, t }) {
   const [attempt, setAttempt] = useState(0);
   useEffect(() => {
     if (!visible) return;
-    onStatus('loading');
-    const player = document.createElement('camera-player');
-    player.camera = camera;
-    player.addEventListener('playback', event => onStatus(event.detail));
-    player.addEventListener('aspect-ratio', event => onAspectRatio(event.detail));
-    player.src = `/video/${camera.id}`;
-    picture.current.append(player);
-    return () => player.remove();
+    const mount = picture.current;
+    let player;
+    let retryTimer;
+    let retryDelay = firstRetryDelay;
+    function connect() {
+      let liveSince;
+      retryTimer = undefined;
+      player?.remove();
+      onStatus('loading');
+      player = document.createElement('camera-player');
+      player.camera = camera;
+      player.addEventListener('playback', ({ detail }) => {
+        onStatus(detail);
+        if (detail === 'live') liveSince ??= performance.now();
+        if (detail === 'error' && retryTimer === undefined) {
+          if (liveSince !== undefined && performance.now() - liveSince >= stablePlaybackTime) {
+            retryDelay = firstRetryDelay;
+          }
+          retryTimer = setTimeout(connect, retryDelay);
+          retryDelay = Math.min(retryDelay * 2, maxRetryDelay);
+        }
+      });
+      player.addEventListener('aspect-ratio', event => onAspectRatio(event.detail));
+      player.src = `/video/${camera.id}`;
+      mount.append(player);
+    }
+    connect();
+    return () => {
+      clearTimeout(retryTimer);
+      player.remove();
+    };
   }, [camera, visible, attempt, onStatus, onAspectRatio]);
 
   const waiting = status === 'loading' || status === 'buffering';

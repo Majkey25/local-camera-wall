@@ -2,6 +2,10 @@ import { VideoRTC } from '/video-rtc.js';
 
 export const session = sessionStorage.getItem('kamery.session');
 
+const checkInterval = 2000;
+const startupTimeout = 20_000;
+const stalledTimeout = 12_000;
+
 class CameraPlayer extends VideoRTC {
   constructor() {
     super();
@@ -9,7 +13,6 @@ class CameraPlayer extends VideoRTC {
     this.media = 'video';
     this.visibilityCheck = false;
     this.visibilityThreshold = 0;
-    this.retries = 0;
   }
 
   oninit() {
@@ -27,7 +30,8 @@ class CameraPlayer extends VideoRTC {
     this.video.addEventListener('resize', reportAspectRatio);
     reportAspectRatio();
     this.video.addEventListener('playing', () => {
-      this.retries = 0;
+      if (!this.ws) return;
+      if (this.status === 'loading') this.lastProgress = performance.now();
       this.showStatus('live');
     });
     this.video.addEventListener('waiting', () => {
@@ -41,48 +45,85 @@ class CameraPlayer extends VideoRTC {
   }
 
   onconnect() {
-    if (!this.isConnected || !this.wsURL || this.ws) return false;
+    if (!this.isConnected || !this.wsURL || this.ws || this.failed) return false;
     this.wsState = WebSocket.CONNECTING;
-    this.connectTS = Date.now();
     const socket = new WebSocket(this.wsURL, `kamery.${session}`);
     this.ws = socket;
     socket.binaryType = 'arraybuffer';
-    socket.addEventListener('open', () => this.onopen());
-    socket.addEventListener('close', () => this.onclose());
+    // The inherited MSE handler can still receive queued data after close.
+    socket.addEventListener('message', event => {
+      if (this.ws !== socket) event.stopImmediatePropagation();
+    });
+    socket.addEventListener('open', () => {
+      if (this.ws === socket) this.onopen();
+    });
+    socket.addEventListener('close', () => {
+      if (this.ws === socket) this.fail('error');
+    });
+    this.lastTime = this.video.currentTime;
+    this.lastProgress = performance.now();
+    this.watchTimer = setInterval(() => this.checkPlayback(), checkInterval);
+    this.showStatus('loading');
     return true;
   }
 
   onopen() {
     const modes = super.onopen();
-    this.onmessage.status = message => {
-      if (message.type === 'error') this.showStatus(message.reason === 'credentials' ? 'credentials' : 'error');
+    if (!modes.length) {
+      this.fail('codec');
+      return modes;
+    }
+    const onMedia = this.onmessage.mse;
+    const MediaSource = window.ManagedMediaSource ?? window.MediaSource;
+    this.onmessage.mse = message => {
+      if (message.type === 'mse' && !MediaSource.isTypeSupported(message.value)) this.fail('codec');
+      else onMedia(message);
     };
-    if (!modes.length) this.showStatus('codec');
+    this.onmessage.status = message => {
+      if (message.type === 'error') this.fail(message.reason === 'credentials' ? 'credentials' : 'error');
+    };
     return modes;
   }
 
-  onclose() {
-    if (this.wsState === WebSocket.CLOSED) return false;
-    if (this.status === 'credentials' || this.status === 'codec' || this.retries >= 2) {
-      this.wsState = WebSocket.CLOSED;
-      this.ws = null;
-      return false;
+  checkPlayback() {
+    if (document.hidden) return;
+    const now = performance.now();
+    const time = this.video.currentTime;
+    if (time !== this.lastTime) {
+      this.lastTime = time;
+      this.lastProgress = now;
+      if (this.status === 'buffering' && !this.video.paused
+        && this.video.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) this.showStatus('live');
+      return;
     }
-    this.showStatus('error');
-    this.retries++;
-    return super.onclose();
+    const elapsed = now - this.lastProgress;
+    const timeout = this.status === 'loading' ? startupTimeout : stalledTimeout;
+    if (elapsed >= timeout) this.fail('error');
+    else if (this.status === 'live' && elapsed >= checkInterval * 2) this.showStatus('buffering');
+  }
+
+  fail(status) {
+    this.failed = true;
+    this.closeConnection();
+    this.showStatus(status);
   }
 
   connectedMoveCallback() {
     // Moving a tile does not change its stream.
   }
 
-  disconnectedCallback() {
+  closeConnection() {
     clearTimeout(this.waitTimer);
-    clearTimeout(this.reconnectTID);
-    this.wsState = WebSocket.CLOSED;
-    this.ws?.close();
+    this.waitTimer = null;
+    clearInterval(this.watchTimer);
+    const socket = this.ws;
     this.ws = null;
+    this.wsState = WebSocket.CLOSED;
+    socket?.close();
+  }
+
+  disconnectedCallback() {
+    this.closeConnection();
     if (!this.video) return;
     this.video.pause();
     if (this.video.src.startsWith('blob:')) URL.revokeObjectURL(this.video.src);

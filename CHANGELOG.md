@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.1
+
+* Fixed camera feeds getting stuck on **Connecting…** or freezing after playback starts. Each affected feed now reconnects automatically, with longer waits during repeated failures.
+
 ## 1.2.0
 
 * Drag a camera by its title bar or video to move it. The live tile follows the pointer until you drop it.
